@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1026457354789",
+    "project_id": "capi-fec59",
+    "storage_bucket": "capi-fec59.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1026457354789:android:c2aaf58e35f542e47c75cc",
+        "android_client_info": {
+          "package_name": "com.example.srpf"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVQA3Z2VykF9_Hpi1q7fvxe44bS5b9BJU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
