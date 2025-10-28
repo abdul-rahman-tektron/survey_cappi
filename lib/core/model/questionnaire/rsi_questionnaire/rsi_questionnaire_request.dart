@@ -26,6 +26,7 @@ class AddRsiRequest {
   String? sDriverResidency;
   int? nMonthlyIncome;
   int? nHauler;
+  String? sHauler;
   String? sClientCompany;
   String? sGeoCode;
   String? sLattitude;
@@ -113,6 +114,7 @@ class AddRsiRequest {
     this.sDriverResidency,
     this.nMonthlyIncome,
     this.nHauler,
+    this.sHauler,
     this.sClientCompany,
     this.sGeoCode,
     this.sLattitude,
@@ -202,6 +204,7 @@ class AddRsiRequest {
     sDriverResidency: json["S_DriverResidency"],
     nMonthlyIncome: json["N_MonthlyIncome"],
     nHauler: json["N_Hauler"],
+    sHauler: json["S_Hauler"],
     sClientCompany: json["S_ClientCompany"],
     sGeoCode: json["S_GeoCode"],
     sLattitude: json["S_Lattitude"],
@@ -297,6 +300,7 @@ class AddRsiRequest {
     put("S_DriverResidency", sDriverResidency);
     put("N_MonthlyIncome", nMonthlyIncome);
     put("N_Hauler", nHauler);
+    put("S_Hauler", sHauler);
     put("S_ClientCompany", sClientCompany);
     put("S_GeoCode", sGeoCode);
     put("S_Lattitude", sLattitude);

@@ -1020,8 +1020,19 @@ class RsiQuestionnaireNotifier extends BaseQuestionnaireNotifier {
     }
 
     // Hauler → ID
-    final a6 = _asString(_get('rsi_a6'));
-    if (a6 != null) payload['N_Hauler'] = _asInt(a6);
+    final a6id = _asString(_get('rsi_a6'));
+    if (a6id != null) {
+      payload['N_Hauler'] = _asInt(a6id);
+
+      // If "Other" selected, pass the free-text in S_Hauler
+      final opt = _optionForSelection('rsi_a6', a6id);
+      final isOther = _looksLikeOther(opt, a6id);
+      final otherTxt = _otherCompanionFor('rsi_a6'); // this reads rsi_a6__other
+
+      if (isOther && (otherTxt?.trim().isNotEmpty ?? false)) {
+        payload['S_Hauler'] = otherTxt!.trim();
+      }
+    }
 
     final a7 = _asString(_get('rsi_a7')); // client company
     if (a7 != null) payload['S_ClientCompany'] = a7;

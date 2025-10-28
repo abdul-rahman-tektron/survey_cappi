@@ -54,6 +54,7 @@ class AddPassengerRequest {
   // PETROL
   String? sOrigin;              // S_Origin
   int?    nTRIPPURP;            // N_TRIPPURP (ID only)
+  String? sPurp;           // N_TRIPPURP (ID only)
   String? dtTripStartTime;      // Dt_TripStartTime   ✅ NEW
   String? sLastActivity;        // S_LastActivity     ✅ NEW
   String? sDestination;         // S_Destination
@@ -120,6 +121,7 @@ class AddPassengerRequest {
     // petrol
     this.sOrigin,
     this.nTRIPPURP,
+    this.sPurp,
     this.dtTripStartTime,
     this.sLastActivity,
     this.sDestination,
@@ -220,6 +222,7 @@ class AddPassengerRequest {
         // petrol (new spec)
         sOrigin: json['S_Origin'],
         nTRIPPURP: json['N_TRIPPURP'],
+        sPurp: json['S_Purp'],
         dtTripStartTime: json['Dt_TripStartTime'],
         sLastActivity: json['S_LastActivity'],
         sDestination: json['S_Destination'],
@@ -290,6 +293,7 @@ class AddPassengerRequest {
     // petrol (new spec)
     _putIfNotNull(m, 'S_Origin', sOrigin);
     _putIfNotNull(m, 'N_TRIPPURP', nTRIPPURP);
+    _putIfNotNull(m, 'S_Purp', sPurp);
     _putIfNotNull(m, 'Dt_TripStartTime', dtTripStartTime); // NEW
     _putIfNotNull(m, 'S_LastActivity', sLastActivity);     // NEW
     _putIfNotNull(m, 'S_Destination', sDestination);
@@ -414,6 +418,7 @@ class DemographicsPayload {
 class PetrolPayload {
   final String? sOrigin;           // S_Origin
   final int?    nTRIPPURP;         // N_TRIPPURP (ID)
+  final String? sPurp;
   final String? dtTripStartTime;   // Dt_TripStartTime  ✅ NEW
   final String? sLastActivity;     // S_LastActivity    ✅ NEW
   final String? sDestination;      // S_Destination
@@ -436,6 +441,7 @@ class PetrolPayload {
   PetrolPayload({
     this.sOrigin,
     this.nTRIPPURP,
+    this.sPurp,
     this.dtTripStartTime,
     this.sLastActivity,
     this.sDestination,
@@ -456,6 +462,7 @@ class PetrolPayload {
     final m = <String, dynamic>{};
     _putIfNotNull(m, 'S_Origin', sOrigin);
     _putIfNotNull(m, 'N_TRIPPURP', nTRIPPURP);
+    _putIfNotNull(m, 'S_Purp', sPurp);
     _putIfNotNull(m, 'Dt_TripStartTime', dtTripStartTime); // NEW
     _putIfNotNull(m, 'S_LastActivity', sLastActivity);     // NEW
     _putIfNotNull(m, 'S_Destination', sDestination);
@@ -478,6 +485,7 @@ class PetrolPayload {
 class BorderPayload {
   // NEW per D-set
   final int?    nTRIPPURP;        // D1 (ID only)
+  final String? sPurp;
   final String? sOrigin;          // D2
   final String? dtTripStartTime;  // D3 → Dt_TripStartTime
   final String? sLastActivity;    // D4
@@ -492,6 +500,7 @@ class BorderPayload {
 
   BorderPayload({
     this.nTRIPPURP,
+    this.sPurp,
     this.sOrigin,
     this.dtTripStartTime,
     this.sLastActivity,
@@ -508,6 +517,7 @@ class BorderPayload {
   Map<String, dynamic> toJson() {
     final m = <String, dynamic>{};
     _putIfNotNull(m, 'N_TRIPPURP', nTRIPPURP);
+    _putIfNotNull(m, 'S_Purp', sPurp);
     _putIfNotNull(m, 'S_Origin', sOrigin);
     _putIfNotNull(m, 'Dt_TripStartTime', dtTripStartTime);
     _putIfNotNull(m, 'S_LastActivity', sLastActivity);
@@ -527,7 +537,8 @@ class AirportPayload {
   final String? sAirsideOD;
   final String? sAirline;
   final String? sLandsideOD;
-  final int?    nTRIPPURP;        // only ID
+  final int?    nTRIPPURP;
+  final String? sPurp;// only ID
   final String? sTravellerType; // NEW
   final String? sVehicleType; // string/label
   final String?    sStayDuration;
@@ -539,6 +550,7 @@ class AirportPayload {
     this.sAirline,
     this.sLandsideOD,
     this.nTRIPPURP,
+    this.sPurp,
     this.sTravellerType,
     this.sVehicleType,
     this.sStayDuration,
@@ -552,6 +564,7 @@ class AirportPayload {
     _putIfNotNull(m, 'S_Airline', sAirline);
     _putIfNotNull(m, 'S_LandsideOD', sLandsideOD);
     _putIfNotNull(m, 'N_TRIPPURP', nTRIPPURP);
+    _putIfNotNull(m, 'S_Purp', sPurp);
     _putIfNotNull(m, 'S_TravellerType', sTravellerType);
     _putIfNotNull(m, 'S_VehicleType', sVehicleType);
     _putIfNotNull(m, 'S_StayDuration', sStayDuration);
@@ -569,6 +582,7 @@ class BusPayload {
   final String? sFinalDestination;  // E10 → S_FinalDestination (CSV of labels)
   final String? sODforSP;           // E12 → S_ODforSP (label)
   final int?    nTRIPPURP;          // E2  → N_TRIPPURP (ID only)
+  final String? sPurp;
   final String? sICModeChoice;      // E14 → S_ICModeChoice
   final String? sCostTrip;          // E15 → S_CostTrip
   final String? sBusRoute;          // E6/E11 → S_BusRoute
@@ -587,6 +601,7 @@ class BusPayload {
     this.sFinalDestination,
     this.sODforSP,
     this.nTRIPPURP,
+    this.sPurp,
     this.sICModeChoice,
     this.sCostTrip,
     this.sBusRoute,
@@ -605,6 +620,7 @@ class BusPayload {
     _putIfNotNull(m, 'S_FinalDestination', sFinalDestination);
     _putIfNotNull(m, 'S_ODforSP', sODforSP);
     _putIfNotNull(m, 'N_TRIPPURP', nTRIPPURP);
+    _putIfNotNull(m, 'S_Purp', sPurp);
     _putIfNotNull(m, 'S_ICModeChoice', sICModeChoice);
     _putIfNotNull(m, 'S_CostTrip', sCostTrip);
     _putIfNotNull(m, 'S_BusRoute', sBusRoute);
@@ -620,15 +636,15 @@ class BusPayload {
 }
 
 class HotelPayload {
-  final String? sDestination;   // G2  → S_Destination (CSV of labels)
-  final String? nVehicleType;   // G3  → N_VehicleType (CSV; spec asks for comma-sep if multiple)
-  final String? sLocDuration;   // G4  → S_LocDuration (CSV; one per G2 selection)
-  final String? sHotelStayDuration; // <— NEW: G5 as STRING (S_StayDuration)
-  final int?    nNoOfTrips;     // G6  → N_NoOfTrips   (int)
+  final String? sDestination;     // G2 → S_Destination (CSV of labels)
+  final String? sVehicleType;     // G3 → S_VehicleType (CSV; labels)
+  final String? sLocDuration;     // G4 → S_LocDuration (CSV)
+  final String? sHotelStayDuration; // G5 → S_StayDuration
+  final int? nNoOfTrips;          // G6 → N_NoOfTrips
 
   HotelPayload({
     this.sDestination,
-    this.nVehicleType,
+    this.sVehicleType,
     this.sLocDuration,
     this.sHotelStayDuration,
     this.nNoOfTrips,
@@ -637,7 +653,7 @@ class HotelPayload {
   Map<String, dynamic> toJson() {
     final m = <String, dynamic>{};
     _putIfNotNull(m, 'S_Destination', sDestination);
-    _putIfNotNull(m, 'N_VehicleType', nVehicleType);
+    _putIfNotNull(m, 'S_VehicleType', sVehicleType); // ✅ changed here
     _putIfNotNull(m, 'S_LocDuration', sLocDuration);
     _putIfNotNull(m, 'S_StayDuration', sHotelStayDuration);
     _putIfNotNull(m, 'N_NoOfTrips', nNoOfTrips);

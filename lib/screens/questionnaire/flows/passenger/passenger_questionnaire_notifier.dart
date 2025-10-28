@@ -285,9 +285,30 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
         setCatalog('trip_purposes', withOther);
         break;
 
-      case 1: // Modes
-        setCatalog('modes', opts);
-        break;
+      case 1:
+        { // Modes
+          // Ensure "Other" exists and is flagged as isOther
+          final normalized = opts.map((o) {
+            final isOther =
+                o.isOther == true ||
+                    o.label.trim().toLowerCase() == 'other' ||
+                    o.label.trim().toLowerCase().startsWith('other');
+            return AnswerOption(id: o.id, label: o.label, isOther: isOther);
+          }).toList();
+
+          final hasOther = normalized.any((o) =>
+          o.isOther == true ||
+              o.id.toString() == '99' ||
+              o.label.trim().toLowerCase() == 'other' ||
+              o.label.trim().toLowerCase().startsWith('other'));
+
+          if (!hasOther) {
+            normalized.add(const AnswerOption(id: '99', label: 'Other', isOther: true));
+          }
+
+          setCatalog('modes', normalized);
+          break;
+        }
 
       default:
         debugPrint('Unhandled passenger masterCode=$masterCode');
@@ -999,6 +1020,65 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
       m = int.tryParse(parts[0]) ?? 0;
     }
     return h * 3600 + m * 60 + sec;
+  }
+
+  // Return (purposeId, purposeOtherText). If "Other", id=99 and S_Purp gets the free text.
+  (int?, String?) _purposeIdAndOther(String qid) {
+    // normalize to first selection if multi
+    final rawAns = valueOfGlobal(qid);
+    final String? s = rawAns == null
+        ? null
+        : (rawAns is List && rawAns.isNotEmpty ? rawAns.first?.toString() : rawAns.toString());
+
+    if (s == null || s.trim().isEmpty) return (null, null);
+
+    // 1) if already numeric-like
+    final idFromRaw = int.tryParse(s.trim());
+    if (idFromRaw != null) {
+      final otherTxt = (idFromRaw == 99) ? _otherCompanionFor(qid) : null;
+      return (idFromRaw, otherTxt);
+    }
+
+    // 2) try match an option (id/label) to get an int id
+    final opts = _optionsForQid(qid);
+    int? id;
+    // exact id match (string id)
+    final byId = opts.firstWhere(
+          (o) => o.id.toString().trim().toLowerCase() == s.trim().toLowerCase(),
+      orElse: () => const AnswerOption(id: '', label: ''),
+    );
+    if (byId.id.toString().isNotEmpty) {
+      id = int.tryParse(byId.id.toString());
+    }
+
+    // label match
+    if (id == null) {
+      final byLabel = opts.firstWhere(
+            (o) => o.label.trim().toLowerCase() == s.trim().toLowerCase(),
+        orElse: () => const AnswerOption(id: '', label: ''),
+      );
+      if (byLabel.id.toString().isNotEmpty) {
+        id = int.tryParse(byLabel.id.toString());
+      }
+    }
+
+    // 3) detect "Other(....)" string directly
+    String? otherFromLabel;
+    final otherRe = RegExp(r'^\s*other\s*\((.*?)\)\s*$', caseSensitive: false);
+    final m = otherRe.firstMatch(s.trim());
+    if (m != null) {
+      otherFromLabel = m.group(1)?.trim();
+      id ??= 99;
+    }
+
+    // 4) fallbacks for plain "Other"
+    if (id == null && s.trim().toLowerCase() == 'other') id = 99;
+
+    // 5) companion __other text wins if id==99
+    final otherCompanion = _otherCompanionFor(qid);
+    final other = (id == 99) ? (otherCompanion?.trim().isNotEmpty == true ? otherCompanion : otherFromLabel) : null;
+
+    return (id, other);
   }
 
   String? _formatMmSs(int? seconds) {
@@ -2137,6 +2217,20 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
       debugPrint('⚠️ no device location; skipping S_Emirates resolution');
     }
 
+    String? _purpFrom(String qid) {
+      final id = _asString(_get(qid));
+      if (id == null) return null;
+
+      final opt = _optionForSelection(qid, id);
+      final isOther = _looksLikeOther(opt, id);
+      final otherTxt = _otherCompanionFor(qid); // e.g., "air_f6__other"
+
+      if (isOther && (otherTxt?.trim().isNotEmpty ?? false)) {
+        return 'Other(${otherTxt!.trim()})';
+      }
+      return opt?.label ?? id; // fall back to id if label missing
+    }
+
     // ───────── DEMOGRAPHICS (labels everywhere) ─────────
     final demographics = DemographicsPayload(
       sGender: _labelFor('demo_b1_gender'),
@@ -2153,9 +2247,11 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
     // ───────── CATEGORY: PETROL ─────────
     PetrolPayload? petrol;
     if (questionnaireType == QuestionnaireType.passengerPetrol) {
+      final (purpId, purpOther) = _purposeIdAndOther('c1_purpose');
       petrol = PetrolPayload(
         // IDs updated to new C-set
-        nTRIPPURP: _asInt(_get('c1_purpose')),
+        nTRIPPURP: purpId,
+        sPurp: purpOther,
         // ID only
         sOrigin: _toApiLocString(_get('c2_origin')),          // <-- changed
         // map string or address
@@ -2185,10 +2281,12 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
 
     BorderPayload? border;
     if (questionnaireType == QuestionnaireType.passengerBorder) {
+      final (purpId, purpOther) = _purposeIdAndOther('d1_purpose');
+
       border = BorderPayload(
         // D1 — ID only
-        nTRIPPURP: _asInt(_get('d1_purpose')),
-
+        nTRIPPURP: purpId,
+        sPurp: purpOther,
         // D2 — string/location
         sOrigin: _toApiLocString(_get('d2_origin')),           // <-- changed
 
@@ -2273,13 +2371,17 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
 
       final String? vehicleLabelsCsv = _labelsCsvFrom(vehicleQid);
 
+          final purposeQid = arrived ? 'air_f6' : 'air_f14';
+          // Build a label string; if “Other”, becomes `Other(<text>)`
+          final sPurpStr = _purpFrom(purposeQid);
+
       airport = AirportPayload(
         // Arrived: F3/F4/F5/F6/F7/F8/F10
         // Leaving: F11/F12/F13/F14/F15/F16/F18
         sAirsideOD: _asString(_get(arrived ? 'air_f3' : 'air_f11')),
         sAirline: _asString(_get(arrived ? 'air_f4' : 'air_f12')),
         sLandsideOD: _asString(_get(arrived ? 'air_f5' : 'air_f13')),
-        nTRIPPURP:  _intFromQSelection(arrived ? 'air_f6' : 'air_f14'),
+        sPurp: sPurpStr,
         sVehicleType: vehicleLabelsCsv,
         sTravellerType: travellerTypeLabel,
         sStayDuration: _labelFor(arrived ? 'air_f8' : 'air_f16'),
@@ -2301,6 +2403,7 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
 
     BusPayload? bus;
     if (questionnaireType == QuestionnaireType.bus) {
+      final (purpId, purpOther) = _purposeIdAndOther('bus_e2_purpose');
       final gotOff = valueOfGlobal('scr_e1') == 'got_off';
       final waiting = valueOfGlobal('scr_e1') == 'waiting';
 
@@ -2310,8 +2413,8 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
 
       bus = BusPayload(
         // E2: ID only
-        nTRIPPURP: _asInt(_get('bus_e2_purpose')),
-
+        nTRIPPURP: purpId,
+        sPurp: purpOther,
         // E3: origin (string/location)
         sOrigin: _toApiLocString(_get('bus_e3_origin')),         // <-- changed
 
@@ -2403,7 +2506,7 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
         return out;
       }
 
-      final modesPerDest = _labelsCsvForRepeatsMulti('hotel_g3_mode'); // list of CSV strings
+      // final modesPerDest = _labelsCsvForRepeatsMulti('hotel_g3_mode'); // list of CSV strings
       final durationsPerDest = _labelsForRepeats('hotel_g4_time'); // list of single labels
 
       // helper: get selected IDs (as strings) for a repeated multi-select q like 'hotel_g3_mode__<destId>'
@@ -2447,14 +2550,26 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
         return out;
       }
 
-      final vehicleTypeIdStrings = _idCsvListForRepeats('hotel_g3_mode');
-      final vehicleTypeIdInts = vehicleTypeIdStrings
-          .map((s) => int.tryParse(s))
-          .whereType<int>()
-          .toList();
-      final vehicleTypeCsvIds = vehicleTypeIdInts.isEmpty
-          ? null
-          : vehicleTypeIdInts.map((n) => n.toString()).join(','); // "1,3,5"
+      // final vehicleTypeIdStrings = _idCsvListForRepeats('hotel_g3_mode');
+      // final vehicleTypeIdInts = vehicleTypeIdStrings
+      //     .map((s) => int.tryParse(s))
+      //     .whereType<int>()
+      //     .toList();
+      // final vehicleTypeCsvIds = vehicleTypeIdInts.isEmpty
+      //     ? null
+      //     : vehicleTypeIdInts.map((n) => n.toString()).join(','); // "1,3,5"
+
+      final modesPerDest = _labelsCsvForRepeatsMulti('hotel_g3_mode'); // e.g. ["Car (owned or hired), Other(My shuttle)", "Taxi"]
+
+      final seen = <String>{};
+      final flattened = <String>[];
+      for (final csv in modesPerDest) {
+        for (final raw in csv.split(',')) {
+          final t = raw.trim();
+          if (t.isEmpty) continue;
+          if (seen.add(t)) flattened.add(t); // first time only
+        }
+      }
 
       hotel = HotelPayload(
         // G2 → CSV of destination type labels
@@ -2462,7 +2577,7 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
 
         // G3 → spec says “Add in comma separated if multiple”
         // We’ll flatten: join each per-destination CSV as individual items into one CSV
-        nVehicleType: vehicleTypeCsvIds,
+        sVehicleType: flattened.isEmpty ? null : flattened.join(', '), // ← G3 labels CSV
 
         // G4 → CSV (one per destination, in the same order as G2)
         sLocDuration: durationsPerDest.isEmpty ? null : durationsPerDest.join(', '),
@@ -2483,7 +2598,6 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
     final req = AddPassengerRequest.fromSections(
       nStatus: nStatus,
       action: action,
-      // ⬅️ "update" when editing, otherwise "add"
       nPassengerRsiid: passengerId,
       projectId: _projectIdFor(questionnaireType),
       screening: screening,

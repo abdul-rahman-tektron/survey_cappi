@@ -3,15 +3,15 @@ import 'package:srpf/core/questions/model/question_model.dart';
 import 'package:srpf/utils/enums.dart';
 
 /// Shared option sets (unchanged)
-// const _kPurposeLocOpts = <AnswerOption>[
-//   AnswerOption(id: 'home',       label: 'A home residence (own, family, friend, etc)'),
-//   AnswerOption(id: 'hotel',      label: 'A hotel or temporary accommodation'),
-//   AnswerOption(id: 'work',       label: 'A workplace'),
-//   AnswerOption(id: 'retail',     label: 'A retail, hospitality, or entertainment venue'),
-//   AnswerOption(id: 'hospital',   label: 'A hospital'),
-//   AnswerOption(id: 'education',  label: 'An education facility'),
-//   AnswerOption(id: 'other',      label: 'Other (please specify)', isOther: true),
-// ];
+const _kPurposeLocOpts = <AnswerOption>[
+  AnswerOption(id: 'home',       label: 'A home residence (own, family, friend, etc)'),
+  AnswerOption(id: 'hotel',      label: 'A hotel or temporary accommodation'),
+  AnswerOption(id: 'work',       label: 'A workplace'),
+  AnswerOption(id: 'retail',     label: 'A retail, hospitality, or entertainment venue'),
+  AnswerOption(id: 'hospital',   label: 'A hospital'),
+  AnswerOption(id: 'education',  label: 'An education facility'),
+  AnswerOption(id: 'other',      label: 'Other (please specify)', isOther: true),
+];
 
 
 const _kGroupSize = <AnswerOption>[
@@ -116,9 +116,10 @@ final QuestionnaireSection airportSection = QuestionnaireSection(
       visibleIf: ConditionGroup(atoms: [
         ConditionAtom(questionId: 'scr_f1', op: Operator.equals, value: 'arrived'),
       ]),
-      catalog: CatalogRef('trip_purposes'),
+      options: _kPurposeLocOpts,
+      allowOtherOption: true,
       validation: QuestionValidation(required: true),
-      captureConfig: const {'apiKey': 'N_TRIPPURP'},
+      captureConfig: const {'apiKey': 'S_Purp'},
     ),
 
     // F7 — N_VehicleType (string; pick first)
@@ -244,9 +245,9 @@ final QuestionnaireSection airportSection = QuestionnaireSection(
         ConditionAtom(questionId: 'scr_f1', op: Operator.equals, value: 'leaving'),
       ])                                                                                      ,
       allowOtherOption: true,
-      catalog: CatalogRef('trip_purposes'),
+      options: _kPurposeLocOpts,
       validation: QuestionValidation(required: true),
-      captureConfig: const {'apiKey': 'N_TRIPPURP'},
+      captureConfig: const {'apiKey': 'S_Purp'},
     ),
 
     // F15 — N_VehicleType (string; pick first)

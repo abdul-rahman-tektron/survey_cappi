@@ -84,7 +84,6 @@ final QuestionnaireSection petrolSectionC = QuestionnaireSection(
       allowOtherOption: true,
       validation: QuestionValidation(required: true),
       captureConfig: const {
-        'apiKey': 'N_TRIPPURP',
         // NOTE: we will submit the numeric ID (string -> int in payload builder).
       },
     ),

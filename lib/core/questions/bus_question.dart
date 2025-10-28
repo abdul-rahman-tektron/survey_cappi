@@ -3,14 +3,14 @@
 
 import 'package:srpf/core/questions/model/question_model.dart';
 
-final _kPurpose = <AnswerOption>[
-  AnswerOption(id: 'commute',  label: 'Commuting'),
-  AnswerOption(id: 'school',   label: 'School / Education'),
-  AnswerOption(id: 'business', label: 'Business'),
-  AnswerOption(id: 'tourism',  label: 'Tourism / Leisure'),
-  AnswerOption(id: 'vff',      label: 'Visiting Friends / Family'),
-  AnswerOption(id: 'shopping', label: 'Shopping'),
-  AnswerOption(id: 'other',    label: 'Other (please specify)', isOther: true),
+final _kPrimaryPurpose = <AnswerOption>[
+  AnswerOption(id: '1',  label: 'Commuting'),
+  AnswerOption(id: '2',  label: 'School / Education'),
+  AnswerOption(id: '3',  label: 'Business'),
+  AnswerOption(id: '4',  label: 'Tourism / Leisure'),
+  AnswerOption(id: '5',  label: 'Visiting Friends / Family'),
+  AnswerOption(id: '6',  label: 'Shopping'),
+  AnswerOption(id: '99', label: 'Other (please specify)', isOther: true),
 ];
 
 final _kActivity = <AnswerOption>[
@@ -88,6 +88,7 @@ final QuestionnaireSection busStopsSection = QuestionnaireSection(
       question: 'What is your primary purpose for travel?',
       type: QuestionType.radio,
       allowOtherOption: true,
+      options: _kPrimaryPurpose,
       catalog: CatalogRef('trip_purposes'),
       validation: QuestionValidation(required: true),
       captureConfig: const {'apiKey': 'N_TRIPPURP'}, // ID only
