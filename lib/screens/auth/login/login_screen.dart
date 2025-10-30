@@ -143,7 +143,7 @@ class _LoginCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 28.h),
+      padding: EdgeInsets.only(left: 16.w, right: 16.w, top: 28.h, bottom: 12.h),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
@@ -183,6 +183,10 @@ class _LoginCard extends StatelessWidget {
               isLoading: loginNotifier.isLoading,
               onPressed: () => loginNotifier.performLogin(context),
             ),
+            10.verticalSpace,
+            Align(
+                alignment: Alignment.center,
+                child: Text(loginNotifier.version ?? "")),
           ],
         ),
       ),

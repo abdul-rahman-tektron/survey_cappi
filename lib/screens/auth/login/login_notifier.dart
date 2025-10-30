@@ -9,6 +9,7 @@ import 'package:srpf/core/model/common/login/login_response.dart';
 import 'package:srpf/core/model/common/login/remember_me_model.dart';
 import 'package:srpf/core/remote/services/common_repository.dart';
 import 'package:srpf/res/strings.dart';
+import 'package:srpf/utils/helpers/app_info_helper.dart';
 import 'package:srpf/utils/helpers/toast_helper.dart';
 import 'package:srpf/utils/router/routes.dart';
 import 'package:srpf/utils/storage/hive_storage.dart';
@@ -22,7 +23,10 @@ class LoginNotifier extends BaseChangeNotifier {
   final formKey = GlobalKey<FormState>();
   bool isChecked = false;
 
+  String? _version;
+
   LoginNotifier() {
+    initData();
     rememberMeData();
   }
 
@@ -31,6 +35,10 @@ class LoginNotifier extends BaseChangeNotifier {
     userNameController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  void initData() async {
+    version = await AppInfoHelper.versionLabel();
   }
 
   Future<void> performLogin(BuildContext context) async {
@@ -154,5 +162,14 @@ class LoginNotifier extends BaseChangeNotifier {
   void _setLoading(bool v) {
     isLoading = v;
     notifyListeners();
+  }
+
+  String? get version => _version;
+
+  set version(String? value) {
+    if (_version != value) {
+      _version = value;
+      notifyListeners();
+    }
   }
 }

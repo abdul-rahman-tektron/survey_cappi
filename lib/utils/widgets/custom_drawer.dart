@@ -6,6 +6,7 @@ import 'package:srpf/core/model/common/login/login_response.dart';
 import 'package:srpf/res/colors.dart';
 import 'package:srpf/res/fonts.dart';
 import 'package:srpf/res/images.dart';
+import 'package:srpf/utils/helpers/app_info_helper.dart';
 import 'package:srpf/utils/helpers/screen_size.dart';
 import 'package:srpf/utils/router/routes.dart';
 import 'package:srpf/utils/storage/hive_storage.dart';
@@ -57,6 +58,22 @@ class CustomDrawer extends StatelessWidget {
               _buildGradientDivider(),
               15.verticalSpace,
               Expanded(child: _buildMenuList(context, isAdmin)),
+              FutureBuilder<String>(
+                future: AppInfoHelper.versionLabel(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox.shrink();
+                  }
+                  return Text(
+                    snapshot.data ?? '',
+                    style: AppFonts.text14.regular.white.style.copyWith(
+                      color: Colors.white70,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  );
+                },
+              ),
+              5.verticalSpace,
               _buildLogoutButton(context),
               15.verticalSpace,
             ],
