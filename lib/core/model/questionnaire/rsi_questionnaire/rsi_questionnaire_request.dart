@@ -96,6 +96,8 @@ class AddRsiRequest {
   String? action;
   String? sFullName;
   int? nStatus;
+  String? locCode;
+  String? sIsLoaded;
 
   AddRsiRequest({
     this.nRsiid,
@@ -184,7 +186,9 @@ class AddRsiRequest {
     this.action,
     this.sFullName,
     this.nStatus,
-    this.sEmirates
+    this.sEmirates,
+    this.locCode,
+    this.sIsLoaded,
   });
 
   factory AddRsiRequest.fromJson(Map<String, dynamic> json) => AddRsiRequest(
@@ -275,6 +279,8 @@ class AddRsiRequest {
     sFullName: json["S_FullName"],
     nStatus: json["N_Status"],
     sEmirates: json["S_Emirates"],
+    locCode: json["locCode"],
+    sIsLoaded: json["S_IsLoaded"],
   );
 
   Map<String, dynamic> toJson() {
@@ -371,6 +377,8 @@ class AddRsiRequest {
     put("S_FullName", sFullName);
     put("N_Status", nStatus);
     put("S_Emirates", sEmirates);
+    put("locCode", locCode);
+    put("S_IsLoaded", sIsLoaded);
 
     return data;
   }

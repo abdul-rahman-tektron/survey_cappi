@@ -5,10 +5,12 @@ import 'package:srpf/core/base/base_notifier.dart';
 import 'package:srpf/core/model/common/dashboard/enumerator_count_request.dart';
 import 'package:srpf/core/model/common/dashboard/enumerator_count_response.dart';
 import 'package:srpf/core/model/common/dashboard/get_surveyor_location_response.dart';
+import 'package:srpf/core/model/common/dashboard/selected_survey.dart';
 import 'package:srpf/core/model/common/dashboard/survey_data_response.dart';
 import 'package:srpf/core/remote/services/common_repository.dart';
 import 'package:srpf/res/colors.dart';
 import 'package:srpf/utils/enums.dart';
+import 'package:srpf/utils/storage/hive_storage.dart';
 
 class HomeNotifier extends BaseChangeNotifier {
   // ── RSI (Freight)
@@ -23,6 +25,19 @@ class HomeNotifier extends BaseChangeNotifier {
 
   // (Optional) still available if you want to show it elsewhere
   double _totalSurveys = 0;
+
+  SelectedSurvey? _selected;
+  SelectedSurvey? get selected => _selected;
+
+  QuestionnaireType? get currentType => _selected?.type;
+  String? get currentCode => _selected?.code;
+  String? get currentLabel => _selected?.label;
+
+  bool _initialPromptDone = false;
+  bool get shouldPromptInitial => !_initialPromptDone && _selected == null;
+  void markPrompted() {
+    _initialPromptDone = true;
+  }
 
   // Expose getters if needed
   double get todayRsi => _todayRsi;
@@ -133,6 +148,21 @@ class HomeNotifier extends BaseChangeNotifier {
     return role.contains('1');
   }
 
+  // Nice title for the chip
+  String? get currentTypeTitle {
+    final t = _selected?.type;
+    if (t == null) return null;
+    switch (t) {
+      case QuestionnaireType.freightRsi:      return 'Freight RSI';
+      case QuestionnaireType.passengerPetrol: return 'Passenger – Petrol';
+      case QuestionnaireType.passengerBorder: return 'Passenger – Border';
+      case QuestionnaireType.bus:             return 'Bus Station';
+      case QuestionnaireType.airport:         return 'Airport';
+      case QuestionnaireType.hotel:           return 'Hotel';
+      case QuestionnaireType.statedPreference:return 'Stated Preference';
+    }
+  }
+
   // Enumerator map state
   final List<EnumeratorPin> _enumerators = [];
 
@@ -160,6 +190,7 @@ class HomeNotifier extends BaseChangeNotifier {
 
   HomeNotifier() {
     loadUserData();
+    _loadPersistedSelection();
     loadApi();
   }
 
@@ -167,7 +198,7 @@ class HomeNotifier extends BaseChangeNotifier {
     await loadEnumeratorCount();
     await loadSurveyData();
     if (isAdmin) {
-      await loadEnumeratorLocations(); // 👈 only for admins
+      await loadEnumeratorLocations();
     }
   }
 
@@ -269,6 +300,38 @@ class HomeNotifier extends BaseChangeNotifier {
     _search = v;
     notifyListeners();
   }
+
+  Future<void> _loadPersistedSelection() async {
+    _selected = HiveStorageService.getSelectedSurvey();
+    notifyListeners();
+  }
+
+  Future<void> applySelection({
+    required QuestionnaireType type,
+    required String code,
+    String? label,
+  }) async {
+    _selected = SelectedSurvey(type: type, code: code, label: label);
+    await HiveStorageService.setSelectedSurvey(_selected!);
+    notifyListeners();
+  }
+
+// Optional: if the API needs specific strings instead of enum name
+  String? get selectedSurveyTypeForApi {
+    final t = _selected?.type;
+    if (t == null) return null;
+    switch (t) {
+      case QuestionnaireType.freightRsi:      return 'RSI';
+      case QuestionnaireType.passengerPetrol: return 'Petrol';
+      case QuestionnaireType.passengerBorder: return 'Border';
+      case QuestionnaireType.bus:             return 'Bus';
+      case QuestionnaireType.airport:         return 'Airport';
+      case QuestionnaireType.hotel:           return 'Hotel';
+      case QuestionnaireType.statedPreference:return 'SP';
+    }
+  }
+
+  String? get selectedLocationCodeForApi => _selected?.code;
 
   String get search => _search;
 

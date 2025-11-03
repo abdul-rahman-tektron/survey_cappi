@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:hive/hive.dart';
+import 'package:srpf/core/model/common/dashboard/selected_survey.dart';
 import 'package:srpf/res/hive_keys.dart';
 
 class HiveStorageService {
@@ -37,6 +40,31 @@ class HiveStorageService {
     return _box.get(HiveKeys.userData);
   }
 
+  static Future<void> setSelectedSurvey(SelectedSurvey s) async {
+    await _box.put(HiveKeys.selectedQuestionnaireJson, jsonEncode(s.toMap()));
+    // (Optionally store denormalized fields for quick lookups)
+    await _box.put(HiveKeys.selectedQuestionnaireType, s.type.name);
+    await _box.put(HiveKeys.selectedLocationCode, s.code);
+    if (s.label != null) await _box.put(HiveKeys.selectedLocationLabel, s.label);
+  }
+
+  static SelectedSurvey? getSelectedSurvey() {
+    final raw = _box.get(HiveKeys.selectedQuestionnaireJson);
+    if (raw is! String || raw.isEmpty) return null;
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      return SelectedSurvey.fromMap(map);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String? getSelectedQuestionnaireTypeName() =>
+      _box.get(HiveKeys.selectedQuestionnaireType);
+  static String? getSelectedLocationCode() =>
+      _box.get(HiveKeys.selectedLocationCode);
+  static String? getSelectedLocationLabel() =>
+      _box.get(HiveKeys.selectedLocationLabel);
 
   /// Remove specific key
   static Future<void> remove(String key) async {

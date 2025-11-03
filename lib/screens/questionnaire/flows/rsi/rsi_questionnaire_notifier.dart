@@ -19,6 +19,7 @@ import 'package:srpf/utils/enums.dart';
 import 'package:srpf/utils/helpers/toast_helper.dart';
 import 'package:srpf/utils/location_helper.dart';
 import 'package:srpf/utils/router/routes.dart';
+import 'package:srpf/utils/storage/hive_storage.dart';
 
 /// RSI-only notifier. No Passenger logic here.
 /// - Builds RSI sections (A..E)
@@ -702,6 +703,8 @@ class RsiQuestionnaireNotifier extends BaseQuestionnaireNotifier {
     }
   }
 
+  String? _hiveLocCode() => HiveStorageService.getSelectedLocationCode();
+
   /// Public: recompute & enforce D1/D2/D3 ordering.
   /// D2 >= D1;  D3 >= (D2 ?? D1)
   void enforceTimingGuards() {
@@ -1103,12 +1106,29 @@ class RsiQuestionnaireNotifier extends BaseQuestionnaireNotifier {
     // E) Weights & charges
     final e1 = _get('rsi_e1'); // composite {tare, gvw, unit}
     if (e1 is Map) {
-      final tare = _asString(e1['tare']);
-      final gvw  = _asString(e1['gvw']);
-      final unit = _asString(e1['unit']); // 't' or 'm3'
-      if (tare != null) payload['S_CargoWeight'] = tare;
-      if (gvw  != null) payload['S_Weight']      = gvw;
-      if (unit != null) payload['S_WeightUnit']  = unit; // ← add this column if backend has it
+      String? _abbr(String? u) {
+        if (u == null) return null;
+        final s = u.trim().toLowerCase();
+        if (s == 't' || s == 'ton' || s == 'tons' || s == 'tonne' || s == 'tonnes') return 't';
+        if (s == 'm3' || s == 'cubic metre' || s == 'cubic meter' || s == 'cubic metres' || s == 'cubic meters') return 'm3';
+        return s; // fallback
+      }
+
+      String _withUnit(String value, String? unitAbbr) {
+        final v = value.trim();
+        if (v.isEmpty) return v;
+        final u = (unitAbbr == null || unitAbbr.isEmpty) ? 't' : unitAbbr; // default to 't'
+        // Avoid double-suffix if user typed it manually
+        final alreadySuffixed = RegExp(r'\b(t|m3)\b$', caseSensitive: false).hasMatch(v);
+        return alreadySuffixed ? v : '$v $u';
+      }
+
+      final tareRaw = _asString(e1['tare']);
+      final gvwRaw  = _asString(e1['gvw']);
+      final unitAbbr = _abbr(_asString(e1['unit'])) ?? 't';
+
+      if (tareRaw != null) payload['S_CargoWeight'] = _withUnit(tareRaw, unitAbbr);
+      if (gvwRaw  != null) payload['S_Weight']      = _withUnit(gvwRaw,  unitAbbr);
     }
 
     final e2 = _asString(_get('rsi_e2')); // weigh method (id or label)
@@ -1174,6 +1194,10 @@ class RsiQuestionnaireNotifier extends BaseQuestionnaireNotifier {
     payload['Action'] = isEdit ? 'update' : 'add';
     if (isEdit) {
       payload['N_RSIID'] = editRsiId;   // pass the id on update
+    }
+
+    if (_hiveLocCode() != null) {
+      payload['locCode'] = _hiveLocCode();
     }
 
     return AddRsiRequest.fromJson(payload);

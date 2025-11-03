@@ -7,4 +7,8 @@ class HiveKeys {
   static const rememberMe = 'remember_me';
   static const userData = 'user_data';
   static const notification = 'notification';
+  static const selectedQuestionnaireJson = 'selectedQuestionnaireJson';
+  static const selectedQuestionnaireType = 'selectedQuestionnaireType';
+  static const selectedLocationCode      = 'selectedLocationCode';
+  static const selectedLocationLabel     = 'selectedLocationLabel';     
 }

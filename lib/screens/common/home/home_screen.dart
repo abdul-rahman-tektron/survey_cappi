@@ -11,6 +11,7 @@ import 'package:srpf/res/styles.dart';
 import 'package:srpf/screens/common/home/home_notifier.dart';
 import 'package:srpf/utils/enums.dart';
 import 'package:srpf/utils/router/routes.dart';
+import 'package:srpf/utils/widgets/bottom_sheet.dart';
 import 'package:srpf/utils/widgets/common_background.dart';
 import 'package:srpf/utils/widgets/custom_appbar.dart';
 import 'package:srpf/utils/widgets/custom_buttons.dart';
@@ -72,11 +73,23 @@ class HomeScreen extends StatelessWidget {
                         homeNotifier,
                         EdgeInsets.symmetric(horizontal: width >= 600 ? 20 : 15),
                       ),
+                      _selectionBar(
+                        context,
+                        homeNotifier,
+                        EdgeInsets.symmetric(horizontal: width >= 600 ? 20 : 15),
+                      ),
                       _buildQuickStatsGrid(context, homeNotifier),
                       5.verticalSpace,
-                      _sectionHeader(
+                      (!homeNotifier.isAdmin)
+                          ? _sectionHeaderWithChange(
                         context,
-                        (!homeNotifier.isAdmin) ? 'Recent Surveys' : 'Enumerators',
+                        'Recent Surveys',
+                        EdgeInsets.symmetric(horizontal: width >= 600 ? 20 : 15),
+                        homeNotifier,
+                      )
+                          : _sectionHeader(
+                        context,
+                        'Enumerators',
                         EdgeInsets.symmetric(horizontal: width >= 600 ? 20 : 15),
                       ),
                       10.verticalSpace,
@@ -103,10 +116,17 @@ class HomeScreen extends StatelessWidget {
                   SliverToBoxAdapter(child: _buildQuickStatsGrid(context, homeNotifier)),
                   SliverToBoxAdapter(child: 5.verticalSpace),
                   SliverToBoxAdapter(
-                    child: _sectionHeader(
+                    child: (!homeNotifier.isAdmin)
+                        ? _sectionHeaderWithChange(
                       context,
-                      (!homeNotifier.isAdmin) ? 'Recent Surveys' : 'Enumerators',
-                      EdgeInsets.symmetric(horizontal: 20),
+                      'Recent Surveys',
+                      EdgeInsets.symmetric(horizontal: width >= 600 ? 20 : 15),
+                      homeNotifier,
+                    )
+                        : _sectionHeader(
+                      context,
+                      'Enumerators',
+                      EdgeInsets.symmetric(horizontal: width >= 600 ? 20 : 15),
                     ),
                   ),
                   SliverToBoxAdapter(child: 10.verticalSpace),
@@ -171,13 +191,13 @@ class HomeScreen extends StatelessWidget {
                 CustomButton(
                   text: 'New Survey',
                   fullWidth: false,
-                  onPressed: () => showCategoryPicker(context),
+                  onPressed: () => _startNewSurvey(context),
                 ),
             ],
           ),
           if (isNarrowSmall) ...[
             10.verticalSpace,
-            CustomButton(text: 'New Survey', onPressed: () => showCategoryPicker(context)),
+            CustomButton(text: 'New Survey', onPressed: () => _startNewSurvey(context)),
           ],
         ],
       ),
@@ -380,9 +400,16 @@ class HomeScreen extends StatelessWidget {
       final int? rsiId = int.tryParse(r.interviewId);
 
       return InkWell(
-        onTap: () {
+        onTap: () async {
           print("r.surveyType");
           print(r.surveyType);
+          final sel = n.selected;
+          if (sel == null || sel.code.isEmpty) {
+            // first time → pick once
+            showCategoryPicker(context);
+            return;
+          }
+
           if (rsiId == null || r.status == InterviewStatus.complete) return;
           if (r.surveyType == "RSI") {
             Navigator.pushNamed(
@@ -869,6 +896,134 @@ class HomeScreen extends StatelessWidget {
                 style: const TextStyle(color: Colors.black54, fontSize: 13),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _startNewSurvey(BuildContext context) async {
+    final n = context.read<HomeNotifier>();
+    final hasLocation = (n.currentCode?.isNotEmpty ?? false);
+
+    if (hasLocation) {
+      // Location already selected → go straight to category dialog (Passenger/Freight)
+      showCategoryPicker(context);
+      return;
+    }
+
+    // First time (or not selected) → open location/type picker
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SurveyPickerSheet(
+        initialType: n.currentType,
+        initialCode: n.currentCode,
+        onApply: (type, code, label) async {
+          await n.applySelection(type: type, code: code, label: label);
+          Navigator.pop(context);           // close bottom sheet
+          showCategoryPicker(context);       // then open your category dialog
+        },
+      ),
+    );
+  }
+
+
+// A small bar that shows current selection + change button
+  Widget _selectionBar(BuildContext context, HomeNotifier n, EdgeInsets pad) {
+    final label = n.currentLabel ?? n.currentCode ?? 'Select type & location';
+    final typeName = n.currentTypeTitle ?? '—';
+
+    return Padding(
+      padding: pad,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.shadowColor.withOpacity(0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowColor.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(typeName, style: AppFonts.text12.medium.grey.style),
+                  const SizedBox(height: 2),
+                  Text(label, style: AppFonts.text16.semiBold.style, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            CustomButton(
+              text: (n.currentCode?.isNotEmpty ?? false) ? 'Change' : 'Select',
+              fullWidth: false,
+              onPressed: () => showCategoryPicker(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeaderWithChange(
+      BuildContext context,
+      String title,
+      EdgeInsets pad,
+      HomeNotifier n,
+      ) {
+    final sel = n.currentCode ?? '—';
+    return Padding(
+      padding: pad,
+      child: Row(
+        children: [
+          Expanded(child: Text(title, style: AppFonts.text18.semiBold.style)),
+          // shows selected code briefly; tap "Change" opens bottom sheet
+          if (sel.trim().isNotEmpty) ...[
+          Text('Location ID: ', style: AppFonts.text14.medium.style),
+            Text(sel, style: AppFonts.text14.bold.style),
+            10.horizontalSpace,
+          ],
+          SizedBox(
+            height: 35,
+            child: CustomButton(
+              onPressed: () async {
+                await showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.white,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                  builder: (_) => SurveyPickerSheet(
+                    initialType: n.currentType,
+                    initialCode: n.currentCode,
+                    onApply: (type, code, label) async {
+                      await n.applySelection(type: type, code: code, label: label);
+                      Navigator.pop(context);
+                    },
+                  ),
+                );
+              },
+              borderColor: AppColors.primary,
+              backgroundColor: AppColors.white,
+              padding: EdgeInsets.symmetric(horizontal: 7.w),
+              textStyle: AppFonts.text14.regular.style,
+              fullWidth: false,
+              text: 'Change',
+            ),
           ),
         ],
       ),

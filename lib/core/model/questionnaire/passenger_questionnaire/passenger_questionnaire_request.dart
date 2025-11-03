@@ -26,6 +26,7 @@ class AddPassengerRequest {
   String? sEmirates; // NEW
   int? nPassengerRsiid;
   int? nVehicleType;
+  String? locCode;
 
   // ── Screening (always present)
   String? dtInterviewStartTime; // Dt_Interview_StartTime
@@ -97,6 +98,7 @@ class AddPassengerRequest {
     this.nStatus,
     this.sEmirates,
     this.nVehicleType,
+    this.locCode,
     // screening
     this.dtInterviewStartTime,
     this.sTotalTime,
@@ -163,6 +165,7 @@ class AddPassengerRequest {
     required int nStatus,
     required ScreeningPayload screening,
     required DemographicsPayload demographics,
+    String? locCode,
     int? nPassengerRsiid,
     PetrolPayload? petrol,
     BorderPayload? border,
@@ -174,6 +177,7 @@ class AddPassengerRequest {
       'Action': action,
       'N_ProjectID': projectId,
       'N_Status': nStatus,
+      'locCode': locCode,
       if (nPassengerRsiid != null) 'N_PassengerRSIID': nPassengerRsiid,
     }
       ..addAll(screening.toJson())
@@ -195,6 +199,7 @@ class AddPassengerRequest {
         sEmirates: json['S_Emirates'],
         nProjectId: json['N_ProjectID'],
         nStatus: json['N_Status'],
+        locCode: json['locCode'],
         nPassengerRsiid: json['N_PassengerRSIID'],
         dtInterviewStartTime: json['Dt_Interview_StartTime'],
         sTotalTime: json['S_TotalTime'],
@@ -265,6 +270,7 @@ class AddPassengerRequest {
     _putIfNotNull(m, 'N_ProjectID', nProjectId);
     _putIfNotNull(m, 'N_Status', nStatus);
     _putIfNotNull(m, 'N_PassengerRSIID', nPassengerRsiid);
+    _putIfNotNull(m, 'locCode', locCode);
 
     // screening
     _putIfNotNull(m, 'Dt_Interview_StartTime', dtInterviewStartTime);

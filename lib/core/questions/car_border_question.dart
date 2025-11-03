@@ -203,6 +203,7 @@ final QuestionnaireSection borderCrossingSection = QuestionnaireSection(
       question: 'Number of people in vehicle, including driver?',
       type: QuestionType.radio,
       options: _kOccupancy,
+      validation: QuestionValidation(required: true),
       captureConfig: const {
         'apiKey': 'N_NoOfPassenger',
         'apiMap': {'alone': 1, '2': 2, '3': 3, '4': 4, '5+': 5},
@@ -215,6 +216,7 @@ final QuestionnaireSection borderCrossingSection = QuestionnaireSection(
       question: 'Are you sharing the cost of your trip with others in your vehicle?',
       type: QuestionType.radio,
       options: _kCostShare,
+      validation: QuestionValidation(required: true),
       visibleIf: ConditionGroup(atoms: [
         ConditionAtom(questionId: 'd10_occupancy', op: Operator.notEquals, value: 'alone'),
       ]),

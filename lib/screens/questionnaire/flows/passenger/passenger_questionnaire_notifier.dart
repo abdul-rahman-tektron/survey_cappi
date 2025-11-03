@@ -39,6 +39,7 @@ import 'package:srpf/core/questions/bus_question.dart';
 import 'package:srpf/core/questions/airport_question.dart';
 import 'package:srpf/core/questions/hotel_questions.dart';
 import 'package:srpf/core/questions/stated_preference_question.dart';
+import 'package:srpf/utils/storage/hive_storage.dart';
 
 class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
   final int? editPassengerId;
@@ -1415,6 +1416,36 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
   //   }
   // }
 
+  String? _hiveLocCode() => HiveStorageService.getSelectedLocationCode();
+
+  String? _hiveSurveyTypeForApi() {
+    // Prefer current flow if present; else fall back to Hive
+    final t = questionnaireType;
+    if (t != null) {
+      switch (t) {
+        case QuestionnaireType.passengerPetrol: return 'Petrol';
+        case QuestionnaireType.passengerBorder: return 'Border';
+        case QuestionnaireType.bus:             return 'Bus';
+        case QuestionnaireType.airport:         return 'Airport';
+        case QuestionnaireType.hotel:           return 'Hotel';
+        case QuestionnaireType.freightRsi:      return 'RSI';
+        case QuestionnaireType.statedPreference:return 'SP';
+      }
+    }
+    // Fallback to what we stored in Hive (enum name → API string)
+    final n = HiveStorageService.getSelectedQuestionnaireTypeName();
+    switch ((n ?? '').toLowerCase()) {
+      case 'passengerpetrol': return 'Petrol';
+      case 'passengerborder': return 'Border';
+      case 'bus':             return 'Bus';
+      case 'airport':         return 'Airport';
+      case 'hotel':           return 'Hotel';
+      case 'freightrsi':      return 'RSI';
+      case 'statedpreference':return 'SP';
+      default: return null;
+    }
+  }
+
   @override
   Future<void> saveDraft(BuildContext context) => onSaveDraft(context);
 
@@ -2607,6 +2638,7 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
       bus: bus,
       airport: airport,
       hotel: hotel, // ← add this
+      locCode: _hiveLocCode(),
     );
 
     return req;

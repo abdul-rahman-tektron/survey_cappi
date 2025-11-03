@@ -431,7 +431,7 @@ final QuestionnaireSection rsiSectionE = QuestionnaireSection(
             'type': 'number',
             'required': true,
             'min': 0,
-            'max': 200,
+            'max': 100000,
             'decimal': true
           },
           {
@@ -440,7 +440,7 @@ final QuestionnaireSection rsiSectionE = QuestionnaireSection(
             'type': 'number',
             'required': true,
             'min': 0,
-            'max': 200,
+            'max': 100000,
             'decimal': true
           },
         ],

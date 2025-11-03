@@ -161,6 +161,7 @@ final QuestionnaireSection busStopsSection = QuestionnaireSection(
         ConditionAtom(questionId: 'scr_e1', op: Operator.equals, value: 'waiting'),
       ]),
       validation: QuestionValidation(required: true, minSelections: 1),
+      allowOtherOption: true,
       captureConfig: const {
         'apiKey': 'S_PTAccess',
         'apiJoin': 'comma',
@@ -246,6 +247,7 @@ final QuestionnaireSection busStopsSection = QuestionnaireSection(
       id: 'bus_e14_ic_mode_reason',
       question: 'Why do you choose to use the bus to travel between these cities?',
       type: QuestionType.openText,
+      validation: QuestionValidation(required: true),
       captureConfig: const {'apiKey': 'S_ICModeChoice'},
     ),
 
@@ -255,7 +257,7 @@ final QuestionnaireSection busStopsSection = QuestionnaireSection(
       question:
       'What is the approximate cost of this trip, one-way? If you took multiple modes, please sum the total cost (AED).',
       type: QuestionType.number,
-      validation: QuestionValidation(minValue: 0, maxValue: 1000000),
+      validation: QuestionValidation(required: true, minValue: 0, maxValue: 1000000),
       captureConfig: const {'apiKey': 'S_CostTrip'},
     ),
   ],
