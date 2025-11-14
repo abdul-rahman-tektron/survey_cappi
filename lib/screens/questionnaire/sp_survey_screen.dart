@@ -15,6 +15,7 @@ class SpSurveyScreen extends StatelessWidget {
   final List<SpSet> initialSets;
   final int? interviewMasterId;
   final int continuedElapsedSec;
+  final String? surveyType;
   final String? startedIso;
 
   const SpSurveyScreen({
@@ -22,6 +23,7 @@ class SpSurveyScreen extends StatelessWidget {
     required this.initialSets,
     this.interviewMasterId,
     this.continuedElapsedSec = 0,
+    this.surveyType,
     this.startedIso,
   });
 
@@ -35,6 +37,7 @@ class SpSurveyScreen extends StatelessWidget {
           sets: initialSets,
           interviewMasterId: interviewMasterId,
           continuedElapsedSec: continuedElapsedSec,
+          surveyType: surveyType,
           startedIso: startedIso,
         );
       },

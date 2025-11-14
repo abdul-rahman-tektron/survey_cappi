@@ -1556,6 +1556,9 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
         final int totalElapsed = _editBaselineSeconds + sessionSeconds;
         final String startedIso = startedAt?.toIso8601String() ?? DateTime.now().toIso8601String();
 
+        // 🔹 NEW: CAPTURE survey type BEFORE clearing
+        final String capturedSurveyType = _surveyTypeKey(questionnaireType);
+
 // Now it’s safe to clear passenger state ONCE
         _clearAllState();
 
@@ -1572,6 +1575,7 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
               'od': '$origin to $destination',
               'sets': sets,
               'interviewMasterId': id,
+              'surveyType': capturedSurveyType,
               'continuedElapsedSec': totalElapsed,
               'startedIso': startedIso,
             },
@@ -1663,6 +1667,30 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
     }
   }
 
+  String _surveyTypeKey(QuestionnaireType? t) {
+    if (t == null) {
+      final s = (valueOfGlobal('scr_type_select') ?? '').toString().toLowerCase();
+      switch (s) {
+        case 'passengerpetrol': return 'petrol';
+        case 'passengerborder': return 'border';
+        case 'bus':             return 'bus';
+        case 'airport':         return 'airport';
+        case 'hotel':           return 'hotel';
+        case 'statedpreference':return 'sp';
+        case 'freightrsi':      return 'rsi';
+        default:                return 'unknown';
+      }
+    }
+    switch (t) {
+      case QuestionnaireType.passengerPetrol: return 'petrol';
+      case QuestionnaireType.passengerBorder: return 'border';
+      case QuestionnaireType.bus:             return 'bus';
+      case QuestionnaireType.airport:         return 'airport';
+      case QuestionnaireType.hotel:           return 'hotel';
+      case QuestionnaireType.statedPreference:return 'sp';
+      case QuestionnaireType.freightRsi:      return 'rsi';
+    }
+  }
   // Exact match helpers (only trim)
   String? _exactIdFor(BaseQuestionnaireNotifier n, String qid, String? raw) {
     if (raw == null) return null;

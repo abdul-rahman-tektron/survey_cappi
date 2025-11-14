@@ -11,6 +11,7 @@ class SpPreambleScreen extends StatelessWidget {
   final int? interviewMasterId;
   final int continuedElapsedSec;
   final String? startedIso;
+  final String? surveyType;
   final String? odResponse;
 
   const SpPreambleScreen({
@@ -19,6 +20,7 @@ class SpPreambleScreen extends StatelessWidget {
     this.interviewMasterId,
     this.continuedElapsedSec = 0,
     this.startedIso,
+    this.surveyType,
     this.odResponse,
   });
 
@@ -176,6 +178,7 @@ class SpPreambleScreen extends StatelessWidget {
                         'sets': initialSets,
                         'interviewMasterId': interviewMasterId,
                         'continuedElapsedSec': continuedElapsedSec,
+                        'surveyType': surveyType,
                         'startedIso': startedIso,
                       },
                     );

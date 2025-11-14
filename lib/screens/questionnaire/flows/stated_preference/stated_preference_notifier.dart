@@ -6,6 +6,9 @@ import 'package:srpf/core/base/base_notifier.dart';
 import 'package:srpf/core/model/common/error/common_response.dart';
 import 'package:srpf/core/model/common/success/common_success_response.dart';
 import 'package:srpf/core/model/questionnaire/sp_questionnaire/add_sp_request.dart';
+import 'package:srpf/core/model/questionnaire/sp_questionnaire/get_sp_data_request.dart';
+import 'package:srpf/core/model/questionnaire/sp_questionnaire/get_sp_data_response.dart';
+import 'package:srpf/core/questions/model/sp_2_model.dart';
 import 'package:srpf/core/questions/model/sp_model.dart';
 import 'package:srpf/core/remote/services/common_repository.dart';
 import 'package:srpf/utils/helpers/toast_helper.dart';
@@ -27,6 +30,7 @@ class SpSurveyNotifier extends BaseChangeNotifier {
   int _current = 0;
   /// ⏱ These two are new — passed from Passenger flow
   final int continuedElapsedSec;
+  final String? surveyType;
   final String? startedIso;
 
   Timer? _ticker;
@@ -34,8 +38,10 @@ class SpSurveyNotifier extends BaseChangeNotifier {
   int _elapsedSec = 0;
 
   SpSurveyNotifier({required this.sets, this.interviewMasterId, this.continuedElapsedSec = 0,
-    this.startedIso,})
+    this.startedIso, this.surveyType})
       : totalSets = sets.length {
+    print("SurveyType in SP Data");
+    print(surveyType);
     _startedAt = _resolveStartedAt();            // set immediately
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => notifyListeners());
     Future.microtask(() async {
@@ -73,6 +79,9 @@ class SpSurveyNotifier extends BaseChangeNotifier {
     final s = seconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
+
+  bool get _sp2AllowedBySurveyType =>
+      surveyType == 'petrol' || surveyType == 'bus';
 
 // SpSurveyNotifier
   void _startTimer() {
@@ -177,7 +186,7 @@ class SpSurveyNotifier extends BaseChangeNotifier {
     );
   }
 
-  /// Submit all sets as ONE bulk payload (list of 6 maps).
+  /// Submit all sets as   ONE bulk payload (list of 6 maps).
   /// Returns true/false so your button handler can react.
   Future<bool> submitFinal(BuildContext context) async {
     bool ok = false;
@@ -224,29 +233,190 @@ class SpSurveyNotifier extends BaseChangeNotifier {
       // 🔥 Call BULK API with the list
       final resp = await CommonRepository.instance.apiAddSPData(requests);
 
-
       if (resp is CommonSuccessResponse && (resp.status ?? false)) {
         ok = true;
-        // ✅ Show success toast
         ToastHelper.showSuccess('SP Data submitted successfully');
 
-        // ✅ Navigate back to home screen
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.home,
-                  (route) => false,
-            );
+        final shouldRunSp2 = _sp2AllowedBySurveyType && sp1RequiresSp2(sets); // ✅ any Rail chosen in SP1?
+
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!context.mounted) return;
+
+          if (!shouldRunSp2) {
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+            return;
           }
+
+          // ──────────────────────────────────────────────────────────
+          // CALL SP2 API *FROM SP1* and pass those sets forward
+          // Build SP2 request using the same OD + carOwner (hsRailElig not needed for Shuttle)
+          final first = sets.first;
+          final sp2Req = GetSpDataRequest(
+            sOdForSp: first.origin,
+            sDestination: first.destination,
+            sCarOwner: first.carOwner ? 'Yes' : 'No',
+          );
+
+          GetSpDataResponse? sp2Resp;
+          try {
+            final spResp = await CommonRepository.instance.apiGetSPData(sp2Req);
+
+            if (spResp is GetSpDataResponse && (spResp.status ?? false)) {
+              sp2Resp = spResp;
+            } else {
+              sp2Resp = null;
+            }
+
+          } catch (e, st) {
+            debugPrint('SP2 fetch error: $e\n$st');
+          }
+
+          // If SP2 fetch fails or empty → finish normally
+          if (sp2Resp is! GetSpDataResponse || !(sp2Resp.status ?? false) || (sp2Resp.result?.isNotEmpty != true)) {
+            Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+            return;
+          }
+
+          // Build SP2 sets from API rows (take 6)
+          final sp2Sets = _buildSp2SetsFromApiRows(sp2Resp.result!).take(6).toList();
+
+          // Navigate to SP2 preamble with timing carried over
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.statedPreference2Preamble,
+                (route) => false,
+            arguments: {
+              'sets': sp2Sets,
+              'interviewMasterId': interviewMasterId,
+              'continuedElapsedSec': totalElapsedSeconds,
+              'startedIso': _startedAt.toIso8601String(),
+              'odResponse': '${first.origin} to ${first.destination}',
+            },
+          );
+          // ──────────────────────────────────────────────────────────
         });
+
       } else {
         ok = false;
-        ToastHelper.showError('Unable to submit SP data. Please try again.', error: 'Unable to submit SP data. Please try again.', stack: StackTrace.current);
-      }
-    });
+        ToastHelper.showError(
+          'Unable to submit SP data. Please try again.',
+          error: 'Unable to submit SP data. Please try again.',
+          stack: StackTrace.current,
+        );
+      }    });
 
     return ok;
+  }
+
+  // Builds SP2 sets from SP2 API rows (result model mirrors SP1 but with Shuttle fields)
+  List<Sp2Set> _buildSp2SetsFromApiRows(List<GetSPDataResult> rows) {
+    final List<Sp2Set> out = [];
+    for (final r in rows) {
+      final carCost   = r.spCarCost;
+      final carTime   = r.spCarTime;
+      final taxiCost  = r.spTaxiCost;
+      final taxiTime  = r.spTaxiTime;
+
+      // Shuttle fields (mapped similar to Rail in SP1)
+      final shuttleCommute = r.spRailCommuteTime; // minutes to/from shuttle stops
+      final shuttleTime    = r.spRailTime;        // minutes on shuttle
+      final shuttleCost    = r.spRailCost;
+      final shuttleTotal   = r.spRailTotalTime;
+
+      // Bus
+      final busCommute = r.spBusCommuteTime;
+      final busTime    = r.spBusTime;
+      final busCost    = r.spBusCost;
+      final busTotal   = r.spBusTotalTime;
+
+      final options = <Sp2Option>[
+        Sp2Option(
+          mode: Sp2Mode.car,
+          totalCost: _numOrNull(carCost),
+          totalTime: _numOrNull(carTime),
+          fuelCost:  _numOrNull(r.spFuelCost),
+          tollsCost: _numOrNull(r.spTollCost),
+          parkingCost:_numOrNull(r.spParkingCost),
+        ),
+        Sp2Option(
+          mode: Sp2Mode.taxi,
+          totalCost: _numOrNull(taxiCost),
+          totalTime: _numOrNull(taxiTime),
+        ),
+        Sp2Option(
+          mode: Sp2Mode.shuttle,
+          totalCost: _numOrNull(shuttleCost),
+          totalTime: _numOrNull(shuttleTotal),
+          timeToFromShuttleStops: _numOrNull(shuttleCommute),
+          timeOnShuttle:          _numOrNull(shuttleTime),
+        ),
+        Sp2Option(
+          mode: Sp2Mode.bus,
+          totalCost: _numOrNull(busCost),
+          totalTime: _numOrNull(busTotal),
+          timeToFromBusStops: _numOrNull(busCommute),
+          timeOnBus:          _numOrNull(busTime),
+        ),
+      ];
+
+      out.add(Sp2Set(
+        reference:   r.sReference ?? '',
+        origin:      r.sOdForSp   ?? '',
+        destination: r.sDestination ?? '',
+        carOwner:    (r.sCarOwner ?? '').toLowerCase().startsWith('y'),
+        scenario:    r.nScenario ?? 0,
+        options:     options,
+      ));
+    }
+    return out;
+  }
+
+  num? _numOrNull(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v;
+    final s = v.toString().trim();
+    if (s.isEmpty) return null;
+    return num.tryParse(s);
+  }
+
+  // Build SP2 sets (you can tune numbers as needed)
+  List<Sp2Set> buildSp2SetsFromSp1(List<SpSet> src) {
+    List<Sp2Set> out = [];
+    for (final s in src) {
+      // Use same totals/time for now; tweak if your design needs diff values
+      Sp2Option car = const Sp2Option(mode: Sp2Mode.car);
+      Sp2Option taxi = const Sp2Option(mode: Sp2Mode.taxi);
+      Sp2Option shuttle = const Sp2Option(
+        mode: Sp2Mode.shuttle,
+        // Example: if SP1 rail had access 15 + on-train 30, you can reuse those:
+        // totalCost: ..., totalTime: ...,
+        // timeToFromShuttleStops: 15, timeOnShuttle: 30,
+      );
+      Sp2Option bus = const Sp2Option(mode: Sp2Mode.bus);
+
+      // If you want to copy SP1 numbers where available:
+      // try to read from s.options by mode and port them into these Sp2Option(...) constructors.
+
+      out.add(Sp2Set(
+        reference: s.reference,
+        origin: s.origin,
+        destination: s.destination,
+        carOwner: s.carOwner,
+        scenario: s.scenario,
+        options: [car, taxi, shuttle, bus],
+      ));
+    }
+    return out;
+  }
+
+// Was any Rail chosen in SP1?
+  bool sp1RequiresSp2(List<SpSet> sets) {
+    for (final s in sets) {
+      final i = s.selectedIndex;
+      if (i == null) continue;
+      if (s.options[i].mode == SpMode.rail) return true;
+    }
+    return false;
   }
 }
 
@@ -287,3 +457,4 @@ List<SpSet> mockLoadSixSets() {
     makeSet('H32', origin: 'Dubai',     destination: 'Abu Dhabi',  rail: true,  scenario: 1),
   ];
 }
+

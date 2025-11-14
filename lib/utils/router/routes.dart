@@ -2,15 +2,19 @@ import 'dart:ui';
 
 // Auth
 import 'package:flutter/material.dart';
+import 'package:srpf/core/questions/model/sp_2_model.dart';
 import 'package:srpf/core/questions/model/sp_model.dart';
 import 'package:srpf/screens/auth/login/login_screen.dart';
 import 'package:srpf/screens/common/error_screen.dart';
 import 'package:srpf/screens/common/home/home_screen.dart';
 import 'package:srpf/screens/common/network_error_screen.dart';
 import 'package:srpf/screens/common/survey_list/survey_list_screen.dart';
+import 'package:srpf/screens/questionnaire/flows/stated_preference/stated_preference_2_notifier.dart';
 import 'package:srpf/screens/questionnaire/flows/stated_preference/stated_preference_notifier.dart';
 import 'package:srpf/screens/questionnaire/questionnaire_home.dart';
+import 'package:srpf/screens/questionnaire/sp_2_home_screen.dart';
 import 'package:srpf/screens/questionnaire/sp_home_screen.dart';
+import 'package:srpf/screens/questionnaire/sp_survey_2_screen.dart';
 import 'package:srpf/screens/questionnaire/sp_survey_screen.dart';
 import 'package:srpf/utils/enums.dart';
 
@@ -25,6 +29,8 @@ class AppRoutes {
   static const String surveyList = '/survey-list';
   static const String statedPreferencePreamble = '/sp-preamble';
   static const String statedPreference = '/stated-reference';
+  static const String statedPreference2Preamble = '/sp2-preamble';
+  static const String statedPreference2 = '/sp2-survey';
 
   /// 🌐 Common
   static const String mapLocation = '/map-location';
@@ -52,9 +58,25 @@ class AppRouter {
         final sets = args['sets'] as List<SpSet>?;
         final int? interviewMasterId = args['interviewMasterId'] as int?;
         final int continuedElapsedSec = args['continuedElapsedSec'] as int? ?? 0;
+        final String? surveyType = args['surveyType'] as String?;
         final String? startedIso = args['startedIso'] as String?;
         screen = SpSurveyScreen(
           initialSets: sets ?? mockLoadSixSets(),
+          interviewMasterId: interviewMasterId,
+          continuedElapsedSec: continuedElapsedSec,
+          surveyType: surveyType,
+          startedIso: startedIso,
+        ); // fallback
+        break;
+
+      case AppRoutes.statedPreference2:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final sets = args['sets'] as List<Sp2Set>?;
+        final int? interviewMasterId = args['interviewMasterId'] as int?;
+        final int continuedElapsedSec = args['continuedElapsedSec'] as int? ?? 0;
+        final String? startedIso = args['startedIso'] as String?;
+        screen = Sp2SurveyScreen(
+          initialSets: sets ?? mock2LoadSixSets(),
           interviewMasterId: interviewMasterId,
           continuedElapsedSec: continuedElapsedSec,
           startedIso: startedIso,
@@ -80,6 +102,7 @@ class AppRouter {
         final String od = args['od'] as String? ?? 'Origin to Destination';
         final List<SpSet>? sets = args['sets'] as List<SpSet>?;
         final int? interviewMasterId = args['interviewMasterId'] as int?;
+        final String? surveyType = args['surveyType'] as String?;
         final int continuedElapsedSec = args['continuedElapsedSec'] as int? ?? 0;
         final String? startedIso = args['startedIso'] as String?;
 
@@ -87,6 +110,26 @@ class AppRouter {
           builder: (context) => SpPreambleScreen(
             odResponse: od,
             initialSets: sets ?? mockLoadSixSets(),
+            interviewMasterId: interviewMasterId,
+            continuedElapsedSec: continuedElapsedSec,
+            surveyType: surveyType,
+            startedIso: startedIso,
+          ),
+        );
+        break;
+
+      case AppRoutes.statedPreference2Preamble:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final String od = args['od'] as String? ?? 'Origin to Destination';
+        final List<Sp2Set>? sets = args['sets'] as List<Sp2Set>?;
+        final int? interviewMasterId = args['interviewMasterId'] as int?;
+        final int continuedElapsedSec = args['continuedElapsedSec'] as int? ?? 0;
+        final String? startedIso = args['startedIso'] as String?;
+
+        screen = Builder(
+          builder: (context) => Sp2PreambleScreen(
+            odResponse: od,
+            initialSets: sets ?? mock2LoadSixSets(),
             interviewMasterId: interviewMasterId,
             continuedElapsedSec: continuedElapsedSec,
             startedIso: startedIso,
