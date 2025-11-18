@@ -56,9 +56,9 @@ class GetSurveyorLocationData {
   String? surveyType;
   int? targets;
   int? totalInterviews;
-  double? sLattitudeActual;
-  double? sLongitudeActual;
-  DateTime? lastSeen;
+  String? sLattitudeActual;
+  String? sLongitudeActual;
+  String? lastSeen;
   DateTime? dtRecorded;
 
   GetSurveyorLocationData({
@@ -83,9 +83,9 @@ class GetSurveyorLocationData {
     surveyType: json["SurveyType"],
     targets: json["Targets"],
     totalInterviews: json["TotalInterviews"],
-    sLattitudeActual: json["S_Lattitude_Actual"]?.toDouble(),
-    sLongitudeActual: json["S_Longitude_Actual"]?.toDouble(),
-    lastSeen: json["LastSeen"] == null ? null : DateTime.parse(json["LastSeen"]),
+    sLattitudeActual: json["S_Lattitude_Actual"],
+    sLongitudeActual: json["S_Longitude_Actual"],
+    lastSeen: json["LastSeen"],
     dtRecorded: json["Dt_Recorded"] == null ? null : DateTime.parse(json["Dt_Recorded"]),
   );
 
@@ -99,7 +99,7 @@ class GetSurveyorLocationData {
     "TotalInterviews": totalInterviews,
     "S_Lattitude_Actual": sLattitudeActual,
     "S_Longitude_Actual": sLongitudeActual,
-    "LastSeen": lastSeen?.toIso8601String(),
+    "LastSeen": lastSeen,
     "Dt_Recorded": dtRecorded?.toIso8601String(),
   };
 }

@@ -11,12 +11,121 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # build by specifying --build-name and --build-number, respectively.
 # In Android, build-name is used as versionName while build-number used as versionCode.
 # Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# In iOS, build-name is used as CFclass LocationPickerNotifier extends BaseChangeNotifier {
+#  GoogleMapController? _mapController;
+#
+#  LatLng? _selectedPosition;
+#  String? _selectedPlaceName;
+#
+#  /// Controller for the search bar text.
+#  final TextEditingController locationController = TextEditingController();
+#
+#  String? building;
+#  String? block;
+#  String? community;
+#
+#  LatLng? get selectedPosition => _selectedPosition;
+#  String? get selectedPlaceName => _selectedPlaceName;
+#
+#  void setMapController(GoogleMapController controller) {
+#    _mapController = controller;
+#  }
+#
+#  /// Sets the map position and reverse-geocodes details.
+#  Future<void> setPlaceDetails({
+#    required LatLng position,
+#    required String placeName,
+#  }) async {
+#    _selectedPosition = position;
+#    _selectedPlaceName = placeName;
+#
+#    // Try to get a nicer name from reverse geocoding
+#    await _reverseGeocode(position);
+#
+#    // ❌ DO NOT touch locationController here
+#    _mapController?.animateCamera(CameraUpdate.newLatLng(position));
+#    notifyListeners();
+#  }
+#
+#  Future<void> _reverseGeocode(LatLng position) async {
+#    try {
+#      final placemarks =
+#          await placemarkFromCoordinates(position.latitude, position.longitude);
+#
+#      if (placemarks.isNotEmpty) {
+#        final p = placemarks.first;
+#
+#        final street = p.thoroughfare ?? '';
+#        final blockName = p.subLocality ?? '';
+#        final city = p.administrativeArea ?? '';
+#
+#        final parts = [
+#          if (street.isNotEmpty) street,
+#          if (blockName.isNotEmpty) blockName,
+#          if (city.isNotEmpty) city,
+#        ];
+#
+#        _selectedPlaceName = parts.join(", ");
+#        building = p.subThoroughfare?.isNotEmpty == true
+#            ? p.subThoroughfare
+#            : p.name;
+#        block = blockName;
+#        community = p.locality ?? '';
+#      }
+#    } catch (e) {
+#      debugPrint("Reverse geocode error: $e");
+#      building = null;
+#      block = null;
+#      community = null;
+#    }
+#  }
+#
+#  Future<void> fetchCurrentLocation() async {
+#    try {
+#      final location = Location();
+#
+#      bool serviceEnabled = await location.serviceEnabled();
+#      if (!serviceEnabled && !await location.requestService()) return;
+#
+#      PermissionStatus permission = await location.hasPermission();
+#      if (permission == PermissionStatus.denied &&
+#          await location.requestPermission() != PermissionStatus.granted) {
+#        return;
+#      }
+#
+#      final current = await location.getLocation();
+#      if (current.latitude != null && current.longitude != null) {
+#        await setPlaceDetails(
+#          position: LatLng(current.latitude!, current.longitude!),
+#          placeName: "Current Location",
+#        );
+#      }
+#    } catch (e) {
+#      debugPrint("Error fetching current location: $e");
+#    }
+#  }
+#
+#  void clear() {
+#    _selectedPosition = null;
+#    _selectedPlaceName = null;
+#    building = null;
+#    block = null;
+#    community = null;
+#    locationController.clear();
+#    notifyListeners();
+#  }
+#
+#  @override
+#  void dispose() {
+#    locationController.dispose();
+#    super.dispose();
+#  }
+#}BundleShortVersionString while build-number is used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.4
+version: 1.0.5
 
 environment:
   sdk: ^3.8.1

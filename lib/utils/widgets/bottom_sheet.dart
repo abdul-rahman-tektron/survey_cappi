@@ -35,7 +35,7 @@ class _SurveyPickerSheetState extends State<SurveyPickerSheet> {
   ];
   static const petrolCodes = [
     'PR6','PR7','PR8','PR9','PR10','PR11','PR12','PR13','PR14','PR16','PR18',
-    'PR/FR1','PR/FR2','PR/FR3','PR/FR5',
+    'PR/FR1','PR/FR2','PR/FR3','PR/FR5', "PR/FR17",
   ];
   static const borderCodes = [
     'PR/FR17','PR/FR19','PR/FR21','PR/FR22','PR/FR23',

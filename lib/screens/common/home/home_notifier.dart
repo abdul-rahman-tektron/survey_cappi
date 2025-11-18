@@ -219,20 +219,34 @@ class HomeNotifier extends BaseChangeNotifier {
 
       final rows = resp.result?.table ?? [];
 
-      // 🔹 2. Convert to EnumeratorPin list
+// 🔹 2. Convert to EnumeratorPin list (only with valid numeric lat/lon)
+      final pins = <EnumeratorPin>[];
+
+      for (final r in rows) {
+        final lat = double.tryParse(r.sLattitudeActual ?? '');
+        final lon = double.tryParse(r.sLongitudeActual ?? '');
+
+        // Skip rows with invalid or missing coordinates
+        if (lat == null || lon == null) continue;
+
+        pins.add(
+          EnumeratorPin(
+            id: r.nCreatedBy ?? 0,
+            name: r.surveyor ?? 'Unknown',
+            lat: lat,
+            lon: lon,
+            role: r.roleName ?? 'Enumerator',
+            surveyType: r.surveyType ?? '-',
+            target: r.targets ?? 0,
+            completed: r.totalInterviews ?? 0,
+            lastSeen: r.dtRecorded,
+          ),
+        );
+      }
+
       _enumerators
         ..clear()
-        ..addAll(rows.map((r) => EnumeratorPin(
-          id: r.nCreatedBy ?? 0,
-          name: r.surveyor ?? 'Unknown',
-          lat: r.sLattitudeActual ?? 0.0,
-          lon: r.sLongitudeActual ?? 0.0,
-          role: r.roleName ?? 'Enumerator',
-          surveyType: r.surveyType ?? '-',
-          target: r.targets ?? 0,
-          completed: r.totalInterviews ?? 0, // API doesn't give this field yet
-          lastSeen: r.dtRecorded ?? r.lastSeen,
-        )));
+        ..addAll(pins);
 
       // 🔹 3. Create Google Map markers
       _markers = _enumerators.map((e) {

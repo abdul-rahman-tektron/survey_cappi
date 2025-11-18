@@ -285,12 +285,31 @@ class RsiQuestionnaireNotifier extends BaseQuestionnaireNotifier {
     // parse "123 AED" → {'amount': 123, 'currency': 'AED'}
     Map<String, dynamic>? _parseMoney(String? s) {
       if (s == null || s.trim().isEmpty) return null;
-      final parts = s.trim().split(RegExp(r'\s+'));
+
+      final trimmed = s.trim();
+
+      // ✅ If API returns "Unknown / Refused", set the toggle
+      final lower = trimmed.toLowerCase();
+      if (lower == 'unknown / refused' || lower == 'unknown/refused') {
+        return {
+          'special': true,
+          'amount': null,
+          'currency': null,
+        };
+      }
+
+      final parts = trimmed.split(RegExp(r'\s+'));
       if (parts.isEmpty) return null;
+
       double? amount = double.tryParse(parts.first.replaceAll(',', ''));
       String? currency = parts.length > 1 ? parts.last.toUpperCase() : null;
       if (amount == null) return null;
-      return {'special': false, 'amount': amount, 'currency': currency ?? 'AED'};
+
+      return {
+        'special': false,
+        'amount': amount,
+        'currency': currency ?? 'AED',
+      };
     }
 
     // simple yes/no loaded mapping
@@ -956,9 +975,16 @@ class RsiQuestionnaireNotifier extends BaseQuestionnaireNotifier {
 
     String? _moneyToString(dynamic ans) {
       if (ans is Map) {
+        // ✅ If user selected "Unknown / Refused", ignore amount/currency
+        if (ans['special'] == true) {
+          return 'Unknown / Refused';
+        }
+
         final amount = ans['amount'];
         final curr = _asString(ans['currency']);
-        if (amount != null && curr != null) return '${amount.toString()} $curr';
+        if (amount != null && curr != null) {
+          return '${amount.toString()} $curr';
+        }
       }
       return null;
     }
@@ -985,6 +1011,14 @@ class RsiQuestionnaireNotifier extends BaseQuestionnaireNotifier {
       return (opt?.label
           .trim()
           .isNotEmpty ?? false) ? opt!.label.trim() : id;
+    }
+
+    String _displayForCargoSelection(String qid, String id) {
+      final opt = _optionForSelection(qid, id);
+      if (opt != null && opt.label.trim().isNotEmpty) {
+        return opt.label.trim();
+      }
+      return id;
     }
 
     // ---------- build payload ----------
@@ -1060,17 +1094,24 @@ class RsiQuestionnaireNotifier extends BaseQuestionnaireNotifier {
           .toList();
 
       if (ids.isNotEmpty) {
-        final labels = ids.map((id) {
-          final qid = (b3 == 'multiple') ? 'rsi_b4_multiple' : 'rsi_b4_single';
-          return _displayForSelection(qid, id);
-        }).toList();
+        final qid =
+        (b3 == 'multiple') ? 'rsi_b4_multiple' : 'rsi_b4_single';
+
+        //For cargo, always use the label (no "other()" magic)
+        final labels = ids
+            .map((id) => _displayForCargoSelection(qid, id))
+            .toList();
+
         payload['S_TypeCargo'] = labels.join(',');
       }
     } else if (b4Ans != null) {
       final id = _asString(b4Ans);
       if (id != null && id.isNotEmpty) {
-        final qid = (b3 == 'multiple') ? 'rsi_b4_multiple' : 'rsi_b4_single';
-        payload['S_TypeCargo'] = _displayForSelection(qid, id);
+        final qid =
+        (b3 == 'multiple') ? 'rsi_b4_multiple' : 'rsi_b4_single';
+
+        //Single selection case – same rule
+        payload['S_TypeCargo'] = _displayForCargoSelection(qid, id);
       }
     }
 
