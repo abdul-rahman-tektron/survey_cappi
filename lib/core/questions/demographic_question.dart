@@ -154,6 +154,7 @@ final demoEmploymentV2 = [
 ];
 
 /// --- B11: Car Access --------------------------------------------------------
+///
 final demoCarAccess = [
   AnswerOption(id: 'no',     label: 'No'),
   AnswerOption(id: 'own',    label: 'Yes – my own car'),
@@ -172,7 +173,7 @@ final QuestionnaireSection demographicsSection = QuestionnaireSection(
       id: 'demo_b0_name',
       question: 'Respondent name',
       type: QuestionType.textField,
-      validation: QuestionValidation(required: true, minLength: 2),
+      validation: QuestionValidation(required: false, minLength: 2),
       captureConfig: const {'apiKey': 'S_FullName'},
     ),
 

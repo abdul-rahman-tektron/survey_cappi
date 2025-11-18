@@ -189,10 +189,10 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
 
   void _seedLocalCatalogsPassenger() {
     // Optional local fallbacks (only if you want something before API loads)
-    setCatalog('sp_od_pairs', const [
-      AnswerOption(id: 'AUH-DXB', label: 'Abu Dhabi → Dubai'),
-      AnswerOption(id: 'DXB-SHJ', label: 'Dubai → Sharjah'),
-    ], notify: false);
+    // setCatalog('sp_od_pairs', const [
+    //   AnswerOption(id: 'AUH-DXB', label: 'Abu Dhabi → Dubai'),
+    //   AnswerOption(id: 'DXB-SHJ', label: 'Dubai → Sharjah'),
+    // ], notify: false);
 
     setCatalog('trip_purposes', const [
       AnswerOption(id: '1', label: 'Commute'),
@@ -2097,11 +2097,11 @@ class PassengerQuestionnaireNotifier extends BaseQuestionnaireNotifier {
       switch (typeString) {
         case 'questionnairetype.passengerpetrol':
         case 'passengerpetrol':
-          return 'Car (Petrol)';
+          return 'Car(Petrol)';
 
         case 'questionnairetype.passengerborder':
         case 'passengerborder':
-          return 'Car (Border)';
+          return 'Car(Border)';
 
         case 'questionnairetype.bus':
           return 'Bus';

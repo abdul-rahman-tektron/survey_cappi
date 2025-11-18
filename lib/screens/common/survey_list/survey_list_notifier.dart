@@ -207,8 +207,8 @@ class SurveyListNotifier extends BaseChangeNotifier {
       surveyType = 'Freight';
     } else if (t.sSurveyType != null && t.sSurveyType!.trim().isNotEmpty) {
       final s = t.sSurveyType!.trim().toLowerCase();
-      if (s.contains('petrol')) surveyType = 'Car (Petrol)';
-      else if (s.contains('border')) surveyType = 'Car (Border)';
+      if (s.contains('petrol')) surveyType = 'Car(Petrol)';
+      else if (s.contains('border')) surveyType = 'Car(Border)';
       else if (s.contains('bus')) surveyType = 'Bus';
       else if (s.contains('airport')) surveyType = 'Airport';
       else if (s.contains('hotel')) surveyType = 'Hotel';
